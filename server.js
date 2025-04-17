@@ -38,7 +38,11 @@ const { Server } = require('socket.io');
 const server = http.createServer(app)
 const io = new Server(server, { cors: {} });
 const port = 6060;
-let onlineUsers = [];
+
+let connectedUsers = new Set();
+function getConnectedUsers() {
+    return Array.from(connectedUsers);
+}
 
 //default page
 app.get('/', (req, res) => {
@@ -46,20 +50,20 @@ app.get('/', (req, res) => {
 })
 
 //socket.io
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
     const userId = socket.handshake.query.userId;
     socket.join(userId);
-    let newOnlineUsers = [...onlineUsers, userId]
-    //broadcast online status
-    socket.broadcast.emit('online', newOnlineUsers);
-    onlineUsers = newOnlineUsers;
+    connectedUsers.add(userId);
 
     //update online status
     mongoClient.connect(conStr).then(clientObject => {
         const db = clientObject.db('hii');
         const timestamp = Date.now();
         const istDateTime = moment(timestamp).tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss')
-        db.collection('users').updateOne({ email: userId }, { $set: { lastseen: istDateTime } })
+        db.collection('users').updateOne({ email: userId }, { $set: { lastseen: istDateTime } }).then(() => {
+            //broadcast online status
+            io.emit('online-offline', getConnectedUsers());
+        })
     })
 
     socket.on('chat', (data) => {
@@ -76,15 +80,16 @@ io.on('connection', (socket) => {
     //user disconnects
     socket.on('disconnect', () => {
         //update online status
-        let newOnlineUsers = onlineUsers.filter(a => a != userId)
-        socket.broadcast.emit('offline', newOnlineUsers);
-        onlineUsers = newOnlineUsers;
+        connectedUsers.delete(userId);
 
         mongoClient.connect(conStr).then(clientObject => {
             const db = clientObject.db('hii');
             const timestamp = Date.now();
             const istDateTime = moment(timestamp).tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss')
-            db.collection('users').updateOne({ email: userId }, { $set: { lastseen: istDateTime } })
+            db.collection('users').updateOne({ email: userId }, { $set: { lastseen: istDateTime } }).then(() => {
+                //broadcast online status
+                io.emit('online-offline', getConnectedUsers());
+            })
         })
     });
 
