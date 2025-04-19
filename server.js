@@ -1,13 +1,14 @@
 /* eslint-disable no-undef */
 const express = require('express');
+const app = express();
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const moment = require('moment-timezone')
 const cors = require('cors');
+app.use(cors({ origin: ["https://hi-messanger.netlify.app","http://localhost:5173"]}));
 const jwt = require("jsonwebtoken");
 const bcrypt = require('bcrypt');
 const cookieParser = require("cookie-parser");
-const app = express();
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -17,8 +18,6 @@ const upload = multer({ dest: './uploads/' });
 require('dotenv').config();
 const conStr = process.env.MONGODB;
 const SECRET_KEY = process.env.KEY;
-
-app.use(cors({ origin: ["https://hi-messanger.netlify.app","http://localhost:5173"], credentials: true }));
 
 const mongoClient = require('mongodb').MongoClient;
 
