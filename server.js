@@ -162,7 +162,7 @@ mongoClient.connect(conStr).then(clientObject => {
             if (!user || !(await checkPassword(password, user.password))) { res.send("Invalid credentials"); return; }
 
             const token = jwt.sign(user, SECRET_KEY, { expiresIn: "1h" });
-            res.cookie("authToken", token, { httpOnly: true, secure: true });
+            res.cookie("authToken", token, { httpOnly: true, secure: true, sameSite: "None" });
             res.send({ user: user, status: 200 });
 
         })
@@ -176,7 +176,7 @@ mongoClient.connect(conStr).then(clientObject => {
             }
 
             const token = jwt.sign(user, SECRET_KEY, { expiresIn: "1h" });
-            res.cookie("authToken", token, { httpOnly: true, secure: true });
+            res.cookie("authToken", token, { httpOnly: true, secure: true, sameSite: "None" });
             res.send({ user: user, status: 200 });
         })
 
