@@ -8,15 +8,18 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require('bcrypt');
 const cookieParser = require("cookie-parser");
 const app = express();
-const conStr = process.env.MONGODB || 'mongodb://localhost:27017/'
-const SECRET_KEY = process.env.KEY || "secret123";
-const url= process.env.URL || "http://localhost:5173";
-app.use(cors({ origin: url, credentials: true }));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-require('dotenv').config();
 const upload = multer({ dest: './uploads/' });
+
+//environment variables
+require('dotenv').config();
+const conStr = process.env.MONGODB;
+const SECRET_KEY = process.env.KEY;
+const url= process.env.URL;
+
+app.use(cors({ origin: url, credentials: true }));
 
 const mongoClient = require('mongodb').MongoClient;
 
@@ -157,7 +160,7 @@ mongoClient.connect(conStr).then(clientObject => {
         db.collection('users').findOne({ email }).then(async (user) => {
             if (!user || !(await checkPassword(password, user.password))) { res.send("Invalid credentials"); return; }
 
-            const token = jwt.sign(user, SECRET_KEY, { expiresIn: "100h" });
+            const token = jwt.sign(user, SECRET_KEY, { expiresIn: "1h" });
             res.cookie("authToken", token, { httpOnly: true, secure: false });
             res.send({ user: user, status: 200 });
 
@@ -171,7 +174,7 @@ mongoClient.connect(conStr).then(clientObject => {
                 res.send('This email has not registered.'); return;
             }
 
-            const token = jwt.sign(user, SECRET_KEY, { expiresIn: "100h" });
+            const token = jwt.sign(user, SECRET_KEY, { expiresIn: "1h" });
             res.cookie("authToken", token, { httpOnly: true, secure: false });
             res.send({ user: user, status: 200 });
         })
