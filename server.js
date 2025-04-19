@@ -4,34 +4,20 @@ const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const moment = require('moment-timezone')
 const cors = require('cors');
+const jwt = require("jsonwebtoken");
+const bcrypt = require('bcrypt');
+const cookieParser = require("cookie-parser");
 const app = express();
-app.use(cors());
+app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 require('dotenv').config();
-
-//cloudinary Configuration
-cloudinary.config({
-    cloud_name: 'dptdikuo6',
-    api_key: '161827842144876',
-    api_secret: 'eEjhM3E_kxhlhrLm17GYB5-id8A'
-});
-
 const upload = multer({ dest: './uploads/' });
-
-app.post('/upload', upload.single('image'), (req, res) => {
-    cloudinary.uploader.upload(req.file.path, (error, result) => {
-        if (error) {
-            console.error(error);
-            res.status(500).send({ message: 'Error uploading image' });
-        } else {
-            res.send(result.url);
-        }
-    });
-});
 
 const mongoClient = require('mongodb').MongoClient;
 const conStr = process.env.PORT || 'mongodb://localhost:27017/'
+const SECRET_KEY = process.env.KEY || "secret123";
 
 const http = require('http')
 const { Server } = require('socket.io');
@@ -43,6 +29,37 @@ let connectedUsers = new Set();
 function getConnectedUsers() {
     return Array.from(connectedUsers);
 }
+
+//bcrypt hashpassword
+const hashPassword = async (plainText) => {
+    const saltRounds = 10;
+    const hash = await bcrypt.hash(plainText, saltRounds);
+    return hash;
+};
+//check password
+const checkPassword = async (plainText, hash) => {
+    const match = await bcrypt.compare(plainText, hash);
+    return match;
+};
+
+
+//cloudinary Configuration
+cloudinary.config({
+    cloud_name: 'dptdikuo6',
+    api_key: '161827842144876',
+    api_secret: 'eEjhM3E_kxhlhrLm17GYB5-id8A'
+});
+
+app.post('/upload', upload.single('image'), (req, res) => {
+    cloudinary.uploader.upload(req.file.path, (error, result) => {
+        if (error) {
+            console.error(error);
+            res.status(500).send({ message: 'Error uploading image' });
+        } else {
+            res.send(result.url);
+        }
+    });
+});
 
 //default page
 app.get('/', (req, res) => {
@@ -93,23 +110,82 @@ io.on('connection', async (socket) => {
         })
     });
 
-
 });
 
 //mongodb
 mongoClient.connect(conStr).then(clientObject => {
     let db = clientObject.db('hii');
-    //google login
-    app.post('/googlelogin', (req, res) => {
-        db.collection('users').findOne({ email: req.body.email }).then((data) => {
-            if (data) {
-                res.send('Login success');
-            }
-            else {
-                db.collection('users').insertOne(req.body).then(() => {
-                    res.send('Login success'); res.end();
+
+    //change profile pic
+    app.post('/changepic', upload.single('image'), (req, res) => {
+        const email = req.body.email;
+        cloudinary.uploader.upload(req.file.path, (error, result) => {
+            if (error) {
+                console.error(error);
+                res.status(500).send({ message: 'Error uploading image' });
+            } else {
+                db.collection('users').updateOne({ email: email }, { $set: { photoURL: result.url } }).then(() => {
+                    res.send({ photoURL: result.url, status: 200 });
                 })
             }
+        });
+    })
+    //change password
+    app.put('/changepassword', async(req, res) => {
+        const email = req.body.email;
+        db.collection('users').updateOne({ email: email }, { $set: { password: await hashPassword(req.body.password)} }).then(() => {
+            res.send({ status: 200 });
+        })
+    })
+    //signup
+    app.post('/signup/', (req, res) => {
+        db.collection('users').findOne({ email: req.body.email }).then(async (user) => {
+            if (user) { res.send('User already registered') }
+            else {
+                const newUser = req.body;
+                const hashedUser = { ...newUser, password: await hashPassword(req.body.password) }
+                db.collection('users').insertOne(hashedUser).then(() => {
+                    res.send(200)
+                })
+            }
+        })
+    })
+    //user login
+    app.post('/login', (req, res) => {
+        const { email, password } = req.body;
+        db.collection('users').findOne({ email }).then(async (user) => {
+            if (!user || !(await checkPassword(password, user.password))) { res.send("Invalid credentials"); return; }
+
+            const token = jwt.sign(user, SECRET_KEY, { expiresIn: "100h" });
+            res.cookie("authToken", token, { httpOnly: true, secure: false });
+            res.send({ user: user, status: 200 });
+
+        })
+    })
+
+    //google login
+    app.post('/googlelogin', (req, res) => {
+        db.collection('users').findOne({ email: req.body.email }).then(async (user) => {
+            if (!user) {
+                res.send('This email has not registered.'); return;
+            }
+
+            const token = jwt.sign(user, SECRET_KEY, { expiresIn: "100h" });
+            res.cookie("authToken", token, { httpOnly: true, secure: false });
+            res.send({ user: user, status: 200 });
+        })
+
+    });
+
+    //google signup
+    app.post('/googlesignup', (req, res) => {
+        db.collection('users').findOne({ email: req.body.email }).then(async (user) => {
+            if (user) {
+                res.send('This email already registered.'); return;
+            }
+            db.collection('users').insertOne(req.body).then(()=>{
+                res.send({ user: user, status: 200 });
+            })
         })
 
     });
@@ -144,6 +220,25 @@ mongoClient.connect(conStr).then(clientObject => {
         })
 
     })
+
+    //check logged in user
+    app.get("/checkuser", async (req, res) => {
+        const token = req.cookies.authToken;
+        if (!token) return res.send("Unauthorized");
+        try {
+            const decoded = jwt.verify(token, SECRET_KEY);
+            const db = (await mongoClient.connect(conStr)).db('hii');
+            const user = await db.collection('users').findOne({email:decoded.email});
+            const users = await db.collection('users').find({}).toArray();
+            const chats = await db.collection('chats').find({}).toArray();
+            const message = (`Hello, ${decoded.displayName}, welcome to the dashboard!`);
+            const data = { user: user, users: users.filter(a => a.email != decoded.email), chats: chats, status: 200, message: message }
+            res.send(data);
+            // eslint-disable-next-line no-unused-vars
+        } catch (error) {
+            res.send("Invalid token");
+        }
+    });
 
 });//...momgo client....
 
