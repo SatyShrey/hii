@@ -17,9 +17,8 @@ const upload = multer({ dest: './uploads/' });
 require('dotenv').config();
 const conStr = process.env.MONGODB;
 const SECRET_KEY = process.env.KEY;
-const url= process.env.URL;
 
-app.use(cors({ origin: url, credentials: true }));
+app.use(cors({ origin: ["https://hi-messanger.netlify.app","http://localhost:5173"], credentials: true }));
 
 const mongoClient = require('mongodb').MongoClient;
 
@@ -164,7 +163,6 @@ mongoClient.connect(conStr).then(clientObject => {
             const token = jwt.sign(user, SECRET_KEY, { expiresIn: "1h" });
             res.cookie("authToken", token, { httpOnly: true, secure: true, sameSite: "None" });
             res.send({ user: user, status: 200 });
-
         })
     })
 
