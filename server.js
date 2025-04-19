@@ -5,9 +5,8 @@ const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const moment = require('moment-timezone')
 const cors = require('cors');
-let url=//"http://localhost:5173";
- "https://hi-messanger.netlify.app";
-app.use(cors({ origin: url}));
+// 'https://hi-messanger.netlify.app'  "http://localhost:5173"
+app.use(cors({ origin: 'https://hi-messanger.netlify.app', credentials: true }));
 const jwt = require("jsonwebtoken");
 const bcrypt = require('bcrypt');
 const cookieParser = require("cookie-parser");
