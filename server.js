@@ -8,7 +8,10 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require('bcrypt');
 const cookieParser = require("cookie-parser");
 const app = express();
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+const conStr = process.env.MONGODB || 'mongodb://localhost:27017/'
+const SECRET_KEY = process.env.KEY || "secret123";
+const url= process.env.URL || "http://localhost:5173";
+app.use(cors({ origin: url, credentials: true }));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -16,8 +19,6 @@ require('dotenv').config();
 const upload = multer({ dest: './uploads/' });
 
 const mongoClient = require('mongodb').MongoClient;
-const conStr = process.env.PORT || 'mongodb://localhost:27017/'
-const SECRET_KEY = process.env.KEY || "secret123";
 
 const http = require('http')
 const { Server } = require('socket.io');
