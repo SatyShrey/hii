@@ -2,8 +2,10 @@
 
 const express = require('express');
 const app = express();
+
 const cors = require('cors');
-app.use(cors())
+app.use(cors({ origin: 'http://localhost:5173' }));
+
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const moment = require('moment-timezone')
