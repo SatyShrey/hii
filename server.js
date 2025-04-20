@@ -2,11 +2,24 @@
 
 const express = require('express');
 const app = express();
+const cors = require('cors');
+const allowedOrigins = ["https://hi-messanger.netlify.app", "http://localhost:5173"];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+  })
+);
+
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const moment = require('moment-timezone')
-const cors = require('cors');
-app.use(cors());
 const bcrypt = require('bcrypt');
 const cookieParser = require("cookie-parser");
 app.use(cookieParser());
