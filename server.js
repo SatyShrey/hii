@@ -5,7 +5,7 @@ const app = express();
 
 require('dotenv').config();
 const cors = require('cors');
-app.use(cors({origin:process.env.ORIGIN}));
+app.use(cors({origin:process.env.origin}));
 
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
@@ -14,7 +14,7 @@ const bcrypt = require('bcrypt');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const upload = multer({ dest: './uploads/' });
-const conStr =process.env.CONSTR
+const conStr =process.env.string
 
 const mongoClient = require('mongodb').MongoClient;
 
