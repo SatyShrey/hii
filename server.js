@@ -120,7 +120,7 @@ mongoClient.connect(conStr).then(clientObject => {
         cloudinary.uploader.upload(req.file.path, (error, result) => {
             if (error) {
                 console.error(error);
-                res.status(500).send({ message: 'Error uploading image' });
+                res.status(500).send({ message: 'Error uploading image!!' });
             } else {
                 db.collection('users').updateOne({ email: email }, { $set: { photoURL: result.url } }).then(() => {
                     res.send({ photoURL: result.url, status: 200 });
@@ -135,10 +135,33 @@ mongoClient.connect(conStr).then(clientObject => {
             res.send({ status: 200 });
         })
     })
+
+    //user login
+    app.post('/login', (req, res) => {
+        const { email, password } = req.body;
+        db.collection('users').findOne({ email }).then(async (user) => {
+            if(user){
+                if (await checkPassword(password, user.password)) { res.send({ user: user, status: 200 }); }
+                else{ res.send("invalid password!"); }
+            }else{ res.send("This email has not registered!"); }
+        })
+    })
+
+    //google login
+    app.post('/googlelogin', (req, res) => {
+        const { email } = req.body;
+        db.collection('users').findOne({ email }).then(async (user) => {
+            if(user){
+                 res.send({ user: user, status: 200 });
+            }else{ res.send("This email has not registered!"); }
+        })
+
+    });
+
     //signup
     app.post('/signup/', (req, res) => {
         db.collection('users').findOne({ email: req.body.email }).then(async (user) => {
-            if (user) { res.send('User already registered') }
+            if (user) { res.send('This email already registered!') }
             else {
                 const newUser = req.body;
                 const hashedUser = { ...newUser, password: await hashPassword(req.body.password) }
@@ -148,36 +171,17 @@ mongoClient.connect(conStr).then(clientObject => {
             }
         })
     })
-
-    //user login
-    app.post('/login', (req, res) => {
-        const { email, password } = req.body;
-        db.collection('users').findOne({ email }).then(async (user) => {
-            if (!user || !(await checkPassword(password, user.password))) { res.send("Invalid credentials"); return; }
-            res.send({ user: user, status: 200 });
-        })
-    })
-
-    //google login
-    app.post('/googlelogin', (req, res) => {
-        db.collection('users').findOne({ email: req.body.email }).then(async (user) => {
-            if (!user) {
-                res.send('This email has not registered.'); return;
-            }
-            res.send({ user: user, status: 200 });
-        })
-
-    });
-
     //google signup
     app.post('/googlesignup', (req, res) => {
         db.collection('users').findOne({ email: req.body.email }).then(async (user) => {
             if (user) {
-                res.send('This email already registered.'); return;
+                res.send('This email already registered!');
             }
-            db.collection('users').insertOne(req.body).then(() => {
-                res.send({ user: user, status: 200 });
-            })
+            else{
+                db.collection('users').insertOne({...req.body,password:'1234'}).then(() => {
+                    res.send({ status: 200 });
+                })
+            }
         })
 
     });
