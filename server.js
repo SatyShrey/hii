@@ -3,20 +3,18 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
+app.use(cors())
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const moment = require('moment-timezone')
 const bcrypt = require('bcrypt');
-const cookieParser = require("cookie-parser");
-app.use(cookieParser());
-app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 const upload = multer({ dest: './uploads/' });
 
 //environment variables
 require('dotenv').config();
 const conStr = process.env.MONGODB;
-app.use(cors({origin:process.env.URL}))
 
 const mongoClient = require('mongodb').MongoClient;
 
