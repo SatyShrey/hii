@@ -3,9 +3,9 @@
 const express = require('express');
 const app = express();
 
+require('dotenv').config();
 const cors = require('cors');
-app.use(cors());
-
+app.use(cors({origin:process.env.ORIGIN}));
 
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
@@ -14,14 +14,14 @@ const bcrypt = require('bcrypt');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const upload = multer({ dest: './uploads/' });
-const conStr ="mongodb+srv://sndsatya:QtAy7QbfwCnzUhvu@clustersnd.adfao0n.mongodb.net/"
+const conStr =process.env.CONSTR
 
 const mongoClient = require('mongodb').MongoClient;
 
 const http = require('http')
 const { Server } = require('socket.io');
 const server = http.createServer(app)
-const io = new Server(server);
+const io = new Server(server, { cors: {} });
 const port = 6060;
 
 let connectedUsers = new Set();
