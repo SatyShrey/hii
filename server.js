@@ -4,7 +4,7 @@ const express = require('express');
 const app = express();
 
 const cors = require('cors');
-app.use(cors({ origin: 'https://hi-messanger.netlify.app' }));
+app.use(cors());
 
 
 const cloudinary = require('cloudinary').v2;
@@ -21,7 +21,7 @@ const mongoClient = require('mongodb').MongoClient;
 const http = require('http')
 const { Server } = require('socket.io');
 const server = http.createServer(app)
-const io = new Server(server, { cors: {} });
+const io = new Server(server);
 const port = 6060;
 
 let connectedUsers = new Set();
