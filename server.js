@@ -6,6 +6,7 @@ const app = express();
 const cors = require('cors');
 app.use(cors({ origin: 'https://hi-messanger.netlify.app' }));
 
+
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const moment = require('moment-timezone')
