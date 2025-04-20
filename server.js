@@ -13,10 +13,7 @@ const bcrypt = require('bcrypt');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const upload = multer({ dest: './uploads/' });
-
-//environment variables
-require('dotenv').config();
-const conStr = process.env.MONGODB || "mongodb://localhost:27017/" ;
+const conStr ="mongodb+srv://sndsatya:QtAy7QbfwCnzUhvu@clustersnd.adfao0n.mongodb.net/"
 
 const mongoClient = require('mongodb').MongoClient;
 
