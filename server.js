@@ -1,13 +1,12 @@
 /* eslint-disable no-undef */
+
 const express = require('express');
 const app = express();
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const moment = require('moment-timezone')
 const cors = require('cors');
-// 'https://hi-messanger.netlify.app'  "http://localhost:5173"
-app.use(cors({ origin: "https://hi-messanger.netlify.app", credentials: true }));
-const jwt = require("jsonwebtoken");
+app.use(cors());
 const bcrypt = require('bcrypt');
 const cookieParser = require("cookie-parser");
 app.use(cookieParser());
@@ -18,7 +17,6 @@ const upload = multer({ dest: './uploads/' });
 //environment variables
 require('dotenv').config();
 const conStr = process.env.MONGODB;
-const SECRET_KEY = process.env.KEY;
 
 const mongoClient = require('mongodb').MongoClient;
 
@@ -134,9 +132,9 @@ mongoClient.connect(conStr).then(clientObject => {
         });
     })
     //change password
-    app.put('/changepassword', async(req, res) => {
+    app.put('/changepassword', async (req, res) => {
         const email = req.body.email;
-        db.collection('users').updateOne({ email: email }, { $set: { password: await hashPassword(req.body.password)} }).then(() => {
+        db.collection('users').updateOne({ email: email }, { $set: { password: await hashPassword(req.body.password) } }).then(() => {
             res.send({ status: 200 });
         })
     })
@@ -159,9 +157,6 @@ mongoClient.connect(conStr).then(clientObject => {
         const { email, password } = req.body;
         db.collection('users').findOne({ email }).then(async (user) => {
             if (!user || !(await checkPassword(password, user.password))) { res.send("Invalid credentials"); return; }
-
-            const token = jwt.sign(user, SECRET_KEY, { expiresIn: "1h" });
-            res.cookie("authToken", token, { httpOnly: true, secure: true, sameSite: "None" });
             res.send({ user: user, status: 200 });
         })
     })
@@ -172,9 +167,6 @@ mongoClient.connect(conStr).then(clientObject => {
             if (!user) {
                 res.send('This email has not registered.'); return;
             }
-
-            const token = jwt.sign(user, SECRET_KEY, { expiresIn: "1h" });
-            res.cookie("authToken", token, { httpOnly: true, secure: true, sameSite: "None" });
             res.send({ user: user, status: 200 });
         })
 
@@ -186,7 +178,7 @@ mongoClient.connect(conStr).then(clientObject => {
             if (user) {
                 res.send('This email already registered.'); return;
             }
-            db.collection('users').insertOne(req.body).then(()=>{
+            db.collection('users').insertOne(req.body).then(() => {
                 res.send({ user: user, status: 200 });
             })
         })
@@ -225,22 +217,17 @@ mongoClient.connect(conStr).then(clientObject => {
     })
 
     //check logged in user
-    app.get("/checkuser", async (req, res) => {
-        const token = req.cookies.authToken;
-        if (!token) return res.send("Unauthorized");
-        try {
-            const decoded = jwt.verify(token, SECRET_KEY);
-            const db = (await mongoClient.connect(conStr)).db('hii');
-            const user = await db.collection('users').findOne({email:decoded.email});
-            const users = await db.collection('users').find({}).toArray();
-            const chats = await db.collection('chats').find({}).toArray();
-            const message = (`Hello, ${decoded.displayName}, welcome to the dashboard!`);
-            const data = { user: user, users: users.filter(a => a.email != decoded.email), chats: chats, status: 200, message: message }
-            res.send(data);
-            // eslint-disable-next-line no-unused-vars
-        } catch (error) {
-            res.send("Invalid token");
-        }
+    app.post("/checkuser", async (req, res) => {
+        db.collection('users').findOne(req.body).then(async(user) => {
+            if (user) {
+                const users = await db.collection('users').find({}).toArray();
+                const chats = await db.collection('chats').find({}).toArray();
+                const data = { user: user, users: users.filter(a => a.email != user.email), chats: chats, status: 200 }
+                res.send(data);
+            }
+            else{ res.send('Login expired!') }
+        })
+
     });
 
 });//...momgo client....
