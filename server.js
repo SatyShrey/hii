@@ -16,7 +16,7 @@ const upload = multer({ dest: './uploads/' });
 
 //environment variables
 require('dotenv').config();
-const conStr = process.env.MONGODB;
+const conStr = process.env.MONGODB || "mongodb://localhost:27017/" ;
 
 const mongoClient = require('mongodb').MongoClient;
 
