@@ -5,7 +5,7 @@ const app = express();
 
 require('dotenv').config();
 const cors = require('cors');
-app.use(cors({origin:process.env.origin}));
+app.use(cors());
 
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
